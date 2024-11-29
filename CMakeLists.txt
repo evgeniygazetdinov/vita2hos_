@@ -1,155 +1,96 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
+project(vita2hos C CXX)
 
-set(VITA2HOS_MAJOR 0)
-set(VITA2HOS_MINOR 3)
-set(VITA2HOS_PATCH 0)
-execute_process(COMMAND
-    git describe --dirty --always --exclude '*'
-    OUTPUT_VARIABLE VITA2HOS_HASH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+# Set CMake module path
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-project(
-    vita2hos
-    VERSION ${VITA2HOS_MAJOR}.${VITA2HOS_MINOR}.${VITA2HOS_PATCH}
-    LANGUAGES C CXX
-)
+# Set Vulkan paths explicitly if not found by find_package
+set(VULKAN_INCLUDE_DIR "/usr/include")
+set(VULKAN_LIBRARY "/usr/lib/x86_64-linux-gnu/libvulkan.so")
 
-# Overwrite libnx location
-set(NX_ROOT ${DEVKITPRO}/libnx)
+# Find required packages
+find_package(VitaSDK REQUIRED)
+find_package(DevkitPro)
 
-include(Platform/NintendoSwitch)
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
-
-# Set Vulkan paths
-set(Vulkan_INCLUDE_DIR "/usr/include/vulkan")
-set(Vulkan_LIBRARY "/usr/lib/x86_64-linux-gnu/libvulkan.so")
-
-# Find Vulkan package
-find_package(Vulkan REQUIRED)
-
-if(DEFINED ENV{VITASDK})
-    set(VITASDK $ENV{VITASDK})
-    set(VITASDK_INCLUDE ${VITASDK}/arm-vita-eabi/include)
-    # Добавляем наши заголовочные файлы первыми
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -include ${CMAKE_SOURCE_DIR}/include/switch_overrides.h -include ${CMAKE_SOURCE_DIR}/include/compiler_compat.h ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS} -idirafter ${VITASDK_INCLUDE}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -include ${CMAKE_SOURCE_DIR}/include/switch_overrides.h -include ${CMAKE_SOURCE_DIR}/include/compiler_compat.h ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS} -idirafter ${VITASDK_INCLUDE}")
-else()
-    message(WARNING "VITASDK not found, using only Switch toolchain")
-    # Добавляем наши заголовочные файлы первыми
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -include ${CMAKE_SOURCE_DIR}/include/switch_overrides.h -include ${CMAKE_SOURCE_DIR}/include/compiler_compat.h ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -include ${CMAKE_SOURCE_DIR}/include/switch_overrides.h -include ${CMAKE_SOURCE_DIR}/include/compiler_compat.h ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS}")
+# Try to find system Vulkan first
+find_package(Vulkan QUIET)
+if(NOT Vulkan_FOUND)
+    # If system Vulkan not found, try our custom finder
+    find_package(VulkanCustom REQUIRED)
 endif()
 
+# Set C/C++ standards
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Add compiler definitions for glibc compatibility
+add_compile_definitions(
+    _GNU_SOURCE
+    __GLIBC_USE(IEC_60559_BFP_EXT_C2X)=0
+    __GLIBC_USE(ISOC2X)=0
+    __GLIBC_USE(IEC_60559_TYPES_EXT)=0
+)
+
+# Set compiler flags
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-builtin")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-builtin")
+endif()
+
+# Set include directories
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
-    vita3k
-    include/vita3k
-    include/uam
-    Vita3K/vita3k
-    Vita3K/vita3k/gxm/include
-    Vita3K/vita3k/shader/include
-    Vita3K/vita3k/features/include
-    Vita3K/vita3k/util/include
-    Vita3K/external
-    Vita3K/external/miniz
-    ${NX_ROOT}/include/spirv_cross
-    ${NX_ROOT}/include/glslang
-    ${NX_ROOT}/include/uam/mesa-imported
-    ${NX_ROOT}/include/uam
-    ${Vulkan_INCLUDE_DIR}
-    /usr/local/vitasdk/arm-vita-eabi/include
-    /opt/devkitpro/devkitA64/aarch64-none-elf/include
-    /opt/devkitpro/devkitA64/lib/gcc/aarch64-none-elf/14.2.0/include
-    /opt/devkitpro/libnx/include
+    ${VITASDK_INCLUDE_DIRS}
+    ${VULKAN_INCLUDE_DIRS}
 )
 
-add_executable(vita2hos
-    source/load.c
-    source/log.c
-    source/main.c
-    source/module.c
-    source/mutex.c
-    source/uam_compiler_iface_c.cpp
-    source/util.c
-    source/vita3k_shader_recompiler_iface_c.cpp
-    source/modules/SceCtrl.c
-    source/modules/SceDisplay.c
-    source/modules/SceGxm.c
-    source/modules/SceGxm_cpp.cpp
-    source/modules/SceKernelThreadMgr.c
-    source/modules/SceLibKernel.c
-    source/modules/SceSysmem.c
-    source/modules/SceTouch.c
-    src/uam/gxm/color_surface.cpp
-    Vita3K/vita3k/gxm/src/attributes.cpp
-    Vita3K/vita3k/gxm/src/color.cpp
-    Vita3K/vita3k/gxm/src/gxp.cpp
-    Vita3K/vita3k/gxm/src/stream.cpp
-    Vita3K/vita3k/gxm/src/textures.cpp
-    Vita3K/vita3k/gxm/src/transfer.cpp
-    Vita3K/vita3k/shader/src/gxp_parser.cpp
-    Vita3K/vita3k/shader/src/spirv_recompiler.cpp
-    Vita3K/vita3k/shader/src/translator/alu.cpp
-    Vita3K/vita3k/shader/src/translator/branch_cond.cpp
-    Vita3K/vita3k/shader/src/translator/data.cpp
-    Vita3K/vita3k/shader/src/translator/ialu.cpp
-    Vita3K/vita3k/shader/src/translator/illegal.cpp
-    Vita3K/vita3k/shader/src/translator/special.cpp
-    Vita3K/vita3k/shader/src/translator/texture.cpp
-    Vita3K/vita3k/shader/src/translator/utils.cpp
-    Vita3K/vita3k/shader/src/usse_decode_helpers.cpp
-    Vita3K/vita3k/shader/src/usse_disasm.cpp
-    Vita3K/vita3k/shader/src/usse_program_analyzer.cpp
-    Vita3K/vita3k/shader/src/usse_translator_entry.cpp
-    Vita3K/vita3k/shader/src/usse_utilities.cpp
-    Vita3K/external/miniz/miniz.c
+if(DEVKITPRO_FOUND)
+    include_directories(${DEVKITPRO_INCLUDE_DIRS})
+endif()
+
+# Collect source files
+file(GLOB_RECURSE SOURCES 
+    "src/*.c"
+    "src/*.cpp"
 )
 
+# Create library target
+add_library(vita2hos STATIC ${SOURCES})
+
+# Set compile options
 target_compile_options(vita2hos PRIVATE
     -Wall
     -Wextra
+    -Werror
     -fPIC
+    -Wno-unused-parameter
+    -Wno-missing-field-initializers
 )
 
+# Set compile definitions
 target_compile_definitions(vita2hos PRIVATE
-    VITA2HOS_MAJOR="${VITA2HOS_MAJOR}"
-    VITA2HOS_MINOR="${VITA2HOS_MINOR}"
-    VITA2HOS_PATCH="${VITA2HOS_PATCH}"
-    VITA2HOS_HASH="${VITA2HOS_HASH}"
+    VK_USE_PLATFORM_XLIB_KHR
 )
 
+# Link libraries
 target_link_libraries(vita2hos PRIVATE
-    ${Vulkan_LIBRARIES}
-    spirv-cross-core
-    spirv-cross-glsl
-    spirv-cross-hlsl
-    spirv-cross-cpp
-    spirv-cross-reflect
-    spirv-cross-util
-    glslang
-    uam
-    miniz
-    deko3dd
+    ${VULKAN_LIBRARIES}
+    ${VITASDK_LIBRARIES}
 )
 
-target_link_directories(vita2hos PRIVATE
-    ${NX_ROOT}/lib
+if(DEVKITPRO_FOUND)
+    target_link_libraries(vita2hos PRIVATE ${DEVKITPRO_LIBRARIES})
+endif()
+
+# Install rules
+install(TARGETS vita2hos
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
 )
 
-target_link_options(vita2hos PRIVATE
-    -specs=${NX_ROOT}/switch32.specs
-    -Wl,-Map,${CMAKE_PROJECT_NAME}.map
-    # pthread_cancel gets removed otherwise, which makes __ghtread_active_p() fail
-    -Wl,-u,pthread_cancel
-)
-
-find_program(NX_ELF2NSO_EXE NAMES elf2nso HINTS "${DEVKITPRO}/tools/bin")
-find_program(NX_NPDMTOOL_EXE NAMES npdmtool HINTS "${DEVKITPRO}/tools/bin")
-find_program(NX_BUILD_PFS0_EXE NAMES build_pfs0 HINTS "${DEVKITPRO}/tools/bin")
-
-nx_create_exefs(${CMAKE_PROJECT_NAME}
-    CONFIG ${CMAKE_PROJECT_NAME}.json
-)
+install(DIRECTORY include/
+    DESTINATION include/vita2hos
+    FILES_MATCHING PATTERN "*.h")

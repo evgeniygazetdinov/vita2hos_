@@ -1,10 +1,13 @@
 #pragma once
 
 // Include Vulkan headers first
-#include "vulkan.h"
+#include <vulkan/vulkan.h>
 
 // Then include platform-specific headers
 #include <psp2/gxm.h>
+
+// Include GXM types
+#include "gxm_types.h"
 
 namespace uam {
 namespace gxm {
@@ -12,53 +15,55 @@ namespace gxm {
 // Convert GXM color format to Vulkan format
 VkFormat translate_color_format(SceGxmColorFormat format);
 
-// Convert GXM surface type to Vulkan image tiling
-VkImageTiling translate_surface_type(SceGxmColorSurfaceType type);
+// Convert GXM surface type to Vulkan tiling
+VkImageTiling translate_color_surface_type(SceGxmColorSurfaceType type);
 
 // Get bytes per pixel for a given color format
 uint32_t get_bytes_per_pixel(SceGxmColorFormat format);
 
-// Initialize a color surface
-int init_color_surface(SceGxmColorSurface *surface,
-                      SceGxmColorFormat colorFormat,
-                      SceGxmColorSurfaceType surfaceType, 
-                      SceGxmColorSurfaceScaleMode scaleMode,
-                      SceGxmOutputRegisterSize outputRegisterSize,
-                      uint32_t width,
-                      uint32_t height,
-                      uint32_t strideInPixels,
-                      void *data);
+// Color surface operations
+class ColorSurface {
+public:
+    ColorSurface() = default;
+    ~ColorSurface() = default;
 
-// Get surface data pointer
-void* get_surface_data(const SceGxmColorSurface *surface);
+    // Initialize color surface
+    int init(SceGxmColorFormat colorFormat,
+             SceGxmColorSurfaceType surfaceType,
+             SceGxmColorSurfaceScaleMode scaleMode,
+             SceGxmOutputRegisterSize outputRegisterSize,
+             uint32_t width,
+             uint32_t height,
+             uint32_t strideInPixels,
+             void *data);
 
-// Set surface data pointer
-int set_surface_data(SceGxmColorSurface *surface, void *data);
+    // Getters
+    void* get_data() const;
+    SceGxmColorFormat get_format() const;
+    SceGxmColorSurfaceType get_type() const;
+    uint32_t get_stride_in_pixels() const;
+    uint32_t get_stride_in_bytes() const;
+    bool is_disabled() const;
+    void get_dimensions(uint32_t &width, uint32_t &height) const;
 
-// Get surface format
-SceGxmColorFormat get_surface_format(const SceGxmColorSurface *surface);
+    // Setters
+    void set_data(void *data);
+    void set_format(SceGxmColorFormat format);
+    void set_disabled(bool disabled);
 
-// Set surface format
-int set_surface_format(SceGxmColorSurface *surface, SceGxmColorFormat format);
+    // Get raw surface
+    const SceGxmColorSurface* get_surface() const { return &surface_; }
+    SceGxmColorSurface* get_surface() { return &surface_; }
 
-// Get surface type
-SceGxmColorSurfaceType get_surface_type(const SceGxmColorSurface *surface);
-
-// Get stride in pixels
-uint32_t get_stride_in_pixels(const SceGxmColorSurface *surface);
-
-// Get stride in bytes
-uint32_t get_stride_in_bytes(const SceGxmColorSurface *surface);
-
-// Check if surface is disabled
-bool is_surface_disabled(const SceGxmColorSurface *surface);
-
-// Set surface disabled state
-void set_surface_disabled(SceGxmColorSurface *surface, bool disabled);
-
-// Get surface dimensions
-void get_surface_dimensions(const SceGxmColorSurface *surface, 
-                          uint32_t *width, uint32_t *height);
+private:
+    SceGxmColorSurface surface_;
+    uint32_t width_;
+    uint32_t height_;
+    uint32_t strideInPixels_;
+    SceGxmColorFormat colorFormat_;
+    SceGxmColorSurfaceType surfaceType_;
+    void* data_;
+};
 
 } // namespace gxm
 } // namespace uam
