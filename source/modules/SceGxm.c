@@ -1883,10 +1883,10 @@ SceGxmColorSurfaceType uam_gxm_get_surface_type(const SceGxmColorSurface *surfac
 }
 
 bool uam_gxm_is_surface_disabled(const SceGxmColorSurface *surface) {
-    return gxm_is_surface_disabled(surface);
+    return gxm_is_surface_disabled((const SceGxmColorSurfaceInner *)surface);
 }
 
 void uam_gxm_get_surface_dimensions(const SceGxmColorSurface *surface,
                                 uint32_t *width, uint32_t *height) {
-    gxm_get_surface_dimensions(surface, width, height);
+    gxm_get_surface_dimensions((const SceGxmColorSurfaceInner *)surface, width, height);
 }

@@ -34,9 +34,9 @@ int gxm_set_surface_format(SceGxmColorSurface *surface, SceGxmColorFormat format
 SceGxmColorSurfaceType gxm_get_surface_type(const SceGxmColorSurface *surface);
 uint32_t gxm_get_stride_in_pixels(const SceGxmColorSurface *surface);
 uint32_t gxm_get_stride_in_bytes(const SceGxmColorSurface *surface);
-bool gxm_is_surface_disabled(const SceGxmColorSurface *surface);
+bool gxm_is_surface_disabled(const SceGxmColorSurfaceInner *surface);
 void gxm_set_surface_disabled(SceGxmColorSurface *surface, bool disabled);
-void gxm_get_surface_dimensions(const SceGxmColorSurface *surface,
+void gxm_get_surface_dimensions(const SceGxmColorSurfaceInner *surface,
                               uint32_t *width, uint32_t *height);
 
 #ifdef __cplusplus

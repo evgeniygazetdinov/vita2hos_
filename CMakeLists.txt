@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.10)
 
 set(VITA2HOS_MAJOR 0)
 set(VITA2HOS_MINOR 3)
@@ -20,9 +20,8 @@ set(NX_ROOT ${DEVKITPRO}/libnx)
 
 include(Platform/NintendoSwitch)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 # Set Vulkan paths
 set(Vulkan_INCLUDE_DIR "/usr/include/vulkan")
@@ -34,13 +33,38 @@ find_package(Vulkan REQUIRED)
 if(DEFINED ENV{VITASDK})
     set(VITASDK $ENV{VITASDK})
     set(VITASDK_INCLUDE ${VITASDK}/arm-vita-eabi/include)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS} -idirafter ${VITASDK_INCLUDE}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS} -idirafter ${VITASDK_INCLUDE}")
+    # Добавляем наши заголовочные файлы первыми
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -include ${CMAKE_SOURCE_DIR}/include/switch_overrides.h -include ${CMAKE_SOURCE_DIR}/include/compiler_compat.h ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS} -idirafter ${VITASDK_INCLUDE}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -include ${CMAKE_SOURCE_DIR}/include/switch_overrides.h -include ${CMAKE_SOURCE_DIR}/include/compiler_compat.h ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS} -idirafter ${VITASDK_INCLUDE}")
 else()
     message(WARNING "VITASDK not found, using only Switch toolchain")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS}")
+    # Добавляем наши заголовочные файлы первыми
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -include ${CMAKE_SOURCE_DIR}/include/switch_overrides.h -include ${CMAKE_SOURCE_DIR}/include/compiler_compat.h ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -include ${CMAKE_SOURCE_DIR}/include/switch_overrides.h -include ${CMAKE_SOURCE_DIR}/include/compiler_compat.h ${NX_ARCH_SETTINGS} ${NX_COMMON_FLAGS}")
 endif()
+
+include_directories(
+    ${CMAKE_SOURCE_DIR}/include
+    vita3k
+    include/vita3k
+    include/uam
+    Vita3K/vita3k
+    Vita3K/vita3k/gxm/include
+    Vita3K/vita3k/shader/include
+    Vita3K/vita3k/features/include
+    Vita3K/vita3k/util/include
+    Vita3K/external
+    Vita3K/external/miniz
+    ${NX_ROOT}/include/spirv_cross
+    ${NX_ROOT}/include/glslang
+    ${NX_ROOT}/include/uam/mesa-imported
+    ${NX_ROOT}/include/uam
+    ${Vulkan_INCLUDE_DIR}
+    /usr/local/vitasdk/arm-vita-eabi/include
+    /opt/devkitpro/devkitA64/aarch64-none-elf/include
+    /opt/devkitpro/devkitA64/lib/gcc/aarch64-none-elf/14.2.0/include
+    /opt/devkitpro/libnx/include
+)
 
 add_executable(vita2hos
     source/load.c
@@ -84,45 +108,10 @@ add_executable(vita2hos
     Vita3K/external/miniz/miniz.c
 )
 
-# Добавляем флаги для предотвращения конфликтов заголовочных файлов
-add_compile_options(-include ${CMAKE_SOURCE_DIR}/include/compiler_types.h)
-add_compile_options(-include ${CMAKE_SOURCE_DIR}/include/compiler_compat.h)
-
-# Добавляем флаги для использования только заголовков devkitA64
-add_compile_options(-nostdinc)
-add_compile_options(-isystem /opt/devkitpro/devkitA64/aarch64-none-elf/include)
-add_compile_options(-isystem /opt/devkitpro/devkitA64/lib/gcc/aarch64-none-elf/14.2.0/include)
-add_compile_options(-isystem /opt/devkitpro/libnx/include)
-add_compile_options(-isystem /usr/local/vitasdk/arm-vita-eabi/include)  # Добавляем путь к PSP2 заголовкам
-add_compile_options(-isystem /usr/include)  # Для системных заголовков
-add_compile_options(-isystem /usr/include/vulkan)  # Для Vulkan
-
-# Добавляем наши заголовочные файлы
-include_directories(${CMAKE_SOURCE_DIR}/include)
-
-target_include_directories(vita2hos PRIVATE
-    include/vita3k
-    include/uam
-    Vita3K/vita3k
-    Vita3K/vita3k/gxm/include
-    Vita3K/vita3k/shader/include
-    Vita3K/vita3k/features/include
-    Vita3K/vita3k/util/include
-    Vita3K/external
-    Vita3K/external/miniz
-    ${NX_ROOT}/include/spirv_cross
-    ${NX_ROOT}/include/glslang
-    ${NX_ROOT}/include/uam/mesa-imported
-    ${NX_ROOT}/include/uam
-    ${Vulkan_INCLUDE_DIR}
-    /usr/local/vitasdk/arm-vita-eabi/include
-    /opt/devkitpro/devkitA64/aarch64-none-elf/include
-    /opt/devkitpro/devkitA64/lib/gcc/aarch64-none-elf/14.2.0/include
-    /opt/devkitpro/libnx/include
-)
-
 target_compile_options(vita2hos PRIVATE
     -Wall
+    -Wextra
+    -fPIC
 )
 
 target_compile_definitions(vita2hos PRIVATE

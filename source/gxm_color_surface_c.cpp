@@ -57,7 +57,7 @@ uint32_t gxm_get_stride_in_bytes(const SceGxmColorSurface *surface) {
     return uam::gxm::get_stride_in_bytes(surface);
 }
 
-bool gxm_is_surface_disabled(const SceGxmColorSurface *surface) {
+bool gxm_is_surface_disabled(const SceGxmColorSurfaceInner *surface) {
     return uam::gxm::is_surface_disabled(surface);
 }
 
@@ -65,7 +65,7 @@ void gxm_set_surface_disabled(SceGxmColorSurface *surface, bool disabled) {
     uam::gxm::set_surface_disabled(surface, disabled);
 }
 
-void gxm_get_surface_dimensions(const SceGxmColorSurface *surface,
+void gxm_get_surface_dimensions(const SceGxmColorSurfaceInner *surface,
                               uint32_t *width, uint32_t *height) {
     uam::gxm::get_surface_dimensions(surface, width, height);
 }
