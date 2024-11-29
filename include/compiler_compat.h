@@ -1,6 +1,9 @@
 #pragma once
 
-// Include our type definitions first
+// Include our glibc compatibility header first
+#include "glibc_compat.h"
+
+// Include our type definitions
 #include "vita2hos_types.h"
 
 // Include our overrides

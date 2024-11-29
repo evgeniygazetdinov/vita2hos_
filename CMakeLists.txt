@@ -25,20 +25,6 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Add compiler definitions for glibc compatibility
-add_compile_definitions(
-    _GNU_SOURCE
-    __GLIBC_USE(IEC_60559_BFP_EXT_C2X)=0
-    __GLIBC_USE(ISOC2X)=0
-    __GLIBC_USE(IEC_60559_TYPES_EXT)=0
-)
-
-# Set compiler flags
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-builtin")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-builtin")
-endif()
-
 # Set include directories
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
@@ -57,22 +43,30 @@ file(GLOB_RECURSE SOURCES
 )
 
 # Create library target
-add_library(vita2hos STATIC ${SOURCES})
+add_library(vita2hos SHARED ${SOURCES})
 
-# Set compile options
-target_compile_options(vita2hos PRIVATE
-    -Wall
-    -Wextra
-    -Werror
-    -fPIC
-    -Wno-unused-parameter
-    -Wno-missing-field-initializers
-)
-
-# Set compile definitions
-target_compile_definitions(vita2hos PRIVATE
-    VK_USE_PLATFORM_XLIB_KHR
-)
+# Set compiler flags
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(vita2hos PRIVATE
+        -fno-builtin
+        -Wall
+        -Wextra
+        -Werror
+        -fPIC
+        -Wno-unused-parameter
+        -Wno-missing-field-initializers
+    )
+    
+    target_compile_definitions(vita2hos PRIVATE
+        VK_USE_PLATFORM_XLIB_KHR
+        # Disable glibc feature macros
+        __GLIBC_USE(IEC_60559_BFP_EXT_C2X)=0
+        __GLIBC_USE(ISOC2X)=0
+        __GLIBC_USE(IEC_60559_TYPES_EXT)=0
+        __GLIBC_USE(IEC_60559_FUNCS_EXT)=0
+        __GLIBC_USE(IEC_60559_BFP_EXT)=0
+    )
+endif()
 
 # Link libraries
 target_link_libraries(vita2hos PRIVATE
