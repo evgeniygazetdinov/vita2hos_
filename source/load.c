@@ -1,3 +1,4 @@
+#include "switch_overrides.h"
 #include "compiler_compat.h"
 #include <stdio.h>
 #include <stdlib.h>

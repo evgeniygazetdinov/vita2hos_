@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-// Basic mutex functions using libnx's implementation
+// Basic mutex functions
 void rmutexInit(RMutex* m);
 void rmutexLock(RMutex* m);
 bool rmutexTryLock(RMutex* m);
